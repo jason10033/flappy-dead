@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Flappy Dead</title>
+  <title>Dead Run</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -96,18 +96,127 @@
       margin-bottom: 20px;
     }
     .hidden { display: none !important; }
+
+    .char-select { display: flex; gap: 16px; margin-bottom: 20px; }
+    .char-option {
+      width: 80px; height: 110px;
+      border: 3px solid #444;
+      border-radius: 8px;
+      background: rgba(30,30,30,0.8);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: all;
+    }
+    .char-option:hover, .char-option.selected {
+      border-color: #50c832;
+      box-shadow: 0 0 15px rgba(80,200,50,0.4);
+      transform: scale(1.08);
+    }
+    .char-option canvas { margin-bottom: 4px; }
+    .char-label { color: #aaa; font-size: 11px; }
+
+    .diff-select { display: flex; gap: 10px; margin-bottom: 20px; }
+    .diff-btn {
+      padding: 8px 18px;
+      border: 2px solid #444;
+      border-radius: 6px;
+      background: rgba(30,30,30,0.8);
+      color: #aaa;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      pointer-events: all;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .diff-btn:hover { border-color: #888; color: #fff; }
+    .diff-btn.selected-easy { border-color: #50c832; color: #50c832; box-shadow: 0 0 10px rgba(80,200,50,0.3); }
+    .diff-btn.selected-medium { border-color: #f39c12; color: #f39c12; box-shadow: 0 0 10px rgba(243,156,18,0.3); }
+    .diff-btn.selected-hard { border-color: #e74c3c; color: #e74c3c; box-shadow: 0 0 10px rgba(231,76,60,0.3); }
+
+    .leaderboard {
+      margin-top: 10px;
+      width: 240px;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+    .lb-title {
+      font-size: 14px;
+      color: #f39c12;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 6px;
+    }
+    .lb-entry {
+      display: flex;
+      justify-content: space-between;
+      padding: 3px 8px;
+      font-size: 12px;
+      color: #aaa;
+      border-bottom: 1px solid #222;
+    }
+    .lb-entry.highlight { color: #50c832; font-weight: bold; }
+    .lb-rank { color: #666; width: 20px; }
+    .lb-name { flex: 1; text-align: left; margin-left: 6px; }
+    .lb-score { color: #e74c3c; }
+    .lb-diff { font-size: 10px; margin-left: 6px; }
+
+    .section-label {
+      font-size: 12px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+    .diff-indicator {
+      position: absolute;
+      top: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 14px;
+      pointer-events: none;
+      z-index: 10;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
   </style>
 </head>
 <body>
   <div id="gameContainer">
     <canvas id="game" width="400" height="600"></canvas>
     <div id="score-hud" class="score-display hidden">0</div>
+    <div id="diff-hud" class="diff-indicator hidden"></div>
 
     <div id="ui-overlay" class="active">
       <div id="menu-screen">
-        <div class="title">FLAPPY DEAD</div>
-        <div class="subtitle">Tap or press Space to jump</div>
-        <button class="start-btn" id="startBtn">PLAY</button>
+        <div class="title" style="font-size:44px;">DEAD RUN</div>
+        <div class="subtitle" style="margin-bottom:15px;">Tap or press Space to jump</div>
+
+        <div class="section-label">Choose your runner</div>
+        <div class="char-select">
+          <div class="char-option selected" id="char1" data-char="1">
+            <canvas id="charPreview1" width="50" height="70"></canvas>
+            <span class="char-label">Runner 1</span>
+          </div>
+          <div class="char-option" id="char2" data-char="2">
+            <canvas id="charPreview2" width="50" height="70"></canvas>
+            <span class="char-label">Runner 2</span>
+          </div>
+        </div>
+
+        <div class="section-label">Difficulty</div>
+        <div class="diff-select">
+          <button class="diff-btn selected-easy" id="diffEasy" data-diff="easy">Easy</button>
+          <button class="diff-btn" id="diffMedium" data-diff="medium">Medium</button>
+          <button class="diff-btn" id="diffHard" data-diff="hard">Hard</button>
+        </div>
+
+        <button class="start-btn" id="startBtn">RUN!</button>
       </div>
 
       <div id="gameover-screen" class="hidden">
@@ -115,8 +224,13 @@
         <div class="game-over-score" id="finalScore"></div>
         <div class="best-score" id="bestScore"></div>
         <div class="brain-count" id="brainCount"></div>
-        <div class="subtitle" style="margin-bottom:20px; font-size:13px;">Collect brains to trade for supplies</div>
-        <button class="start-btn" id="restartBtn">TRY AGAIN</button>
+
+        <div class="leaderboard" id="leaderboard">
+          <div class="lb-title">Top Scores</div>
+          <div id="lb-entries"></div>
+        </div>
+
+        <button class="start-btn" id="restartBtn" style="margin-top:12px;">TRY AGAIN</button>
       </div>
     </div>
   </div>
@@ -130,10 +244,50 @@
     // Game state
     let gameState = 'menu'; // menu, playing, dead
     let score = 0;
-    let bestScore = parseInt(localStorage.getItem('flappyDeadBest') || '0');
+    let bestScore = parseInt(localStorage.getItem('deadRunBest') || '0');
     let brainsCollected = 0;
     let frameCount = 0;
     let difficulty = 1;
+
+    // Character & difficulty selection
+    let selectedChar = 1; // 1 or 2
+    let selectedDifficulty = 'easy'; // easy, medium, hard
+
+    const diffSettings = {
+      easy:   { gravity: 0.24, flapPower: -5.2, pipeSpeed: 2.2, gapStart: 175, gapMin: 140, gapShrink: 0.8, diffScale: 0.008, color: '#50c832' },
+      medium: { gravity: 0.28, flapPower: -5.8, pipeSpeed: 2.5, gapStart: 160, gapMin: 125, gapShrink: 1.0, diffScale: 0.012, color: '#f39c12' },
+      hard:   { gravity: 0.34, flapPower: -6.4, pipeSpeed: 3.0, gapStart: 145, gapMin: 110, gapShrink: 1.3, diffScale: 0.018, color: '#e74c3c' }
+    };
+
+    // Leaderboard (top 10, stored in localStorage)
+    function getLeaderboard() {
+      try { return JSON.parse(localStorage.getItem('deadRunLeaderboard') || '[]'); }
+      catch { return []; }
+    }
+    function saveToLeaderboard(score, diff, charId) {
+      const lb = getLeaderboard();
+      lb.push({ score, diff, charId, date: Date.now() });
+      lb.sort((a, b) => b.score - a.score);
+      localStorage.setItem('deadRunLeaderboard', JSON.stringify(lb.slice(0, 10)));
+    }
+    function renderLeaderboard(currentScore) {
+      const lb = getLeaderboard();
+      const container = document.getElementById('lb-entries');
+      if (lb.length === 0) {
+        container.innerHTML = '<div style="color:#555;font-size:12px;padding:8px;">No scores yet</div>';
+        return;
+      }
+      const diffColors = { easy: '#50c832', medium: '#f39c12', hard: '#e74c3c' };
+      container.innerHTML = lb.map((entry, i) => {
+        const isNew = entry.score === currentScore && entry.date > Date.now() - 2000;
+        return `<div class="lb-entry ${isNew ? 'highlight' : ''}">
+          <span class="lb-rank">${i + 1}.</span>
+          <span class="lb-name">Runner ${entry.charId || '?'}</span>
+          <span class="lb-score">${entry.score}</span>
+          <span class="lb-diff" style="color:${diffColors[entry.diff] || '#888'}">${(entry.diff || '').toUpperCase()}</span>
+        </div>`;
+      }).join('');
+    }
 
     // Zombie bird
     const zombie = {
@@ -633,245 +787,477 @@
       }
     }
 
-    function drawSurvivor() {
-      ctx.save();
-      ctx.translate(zombie.x, zombie.y);
+    function drawSurvivor(targetCtx, tx, ty, useFrameCount, scale) {
+      const c = targetCtx || ctx;
+      const px = tx !== undefined ? tx : zombie.x;
+      const py = ty !== undefined ? ty : zombie.y;
+      const fc = useFrameCount !== undefined ? useFrameCount : frameCount;
+      const sc = scale || 1;
+
+      c.save();
+      c.translate(px, py);
+      if (sc !== 1) c.scale(sc, sc);
 
       // Slight tilt based on velocity (leaning forward/back)
-      const targetRot = Math.min(Math.max(zombie.vy * 2, -15), 20);
-      zombie.rotation += (targetRot - zombie.rotation) * 0.1;
-      ctx.rotate(zombie.rotation * Math.PI / 180);
-
-      zombie.frame += 0.15;
-      zombie.flapTimer = Math.max(0, zombie.flapTimer - 1);
+      if (targetCtx === undefined) {
+        const targetRot = Math.min(Math.max(zombie.vy * 2, -15), 20);
+        zombie.rotation += (targetRot - zombie.rotation) * 0.1;
+        c.rotate(zombie.rotation * Math.PI / 180);
+        zombie.frame += 0.15;
+        zombie.flapTimer = Math.max(0, zombie.flapTimer - 1);
+      }
 
       // Running leg animation
-      const runCycle = Math.sin(frameCount * 0.25);
+      const runCycle = Math.sin(fc * 0.25);
       const legSwing = runCycle * 12;
       const armSwing = -runCycle * 10;
-      const bobY = Math.abs(Math.sin(frameCount * 0.25)) * 2;
+      const bobY = Math.abs(Math.sin(fc * 0.25)) * 2;
 
       // ---- LEGS ----
       // Back leg
-      ctx.save();
-      ctx.translate(-2, 10);
-      ctx.rotate((-legSwing) * Math.PI / 180);
+      c.save();
+      c.translate(-2, 10);
+      c.rotate((-legSwing) * Math.PI / 180);
       // Jeans
-      ctx.fillStyle = '#3a5a8a';
-      ctx.fillRect(-3, 0, 6, 14);
+      c.fillStyle = '#3a5a8a';
+      c.fillRect(-3, 0, 6, 14);
       // Boot
-      ctx.fillStyle = '#3a2a1a';
-      ctx.fillRect(-3, 12, 8, 5);
-      ctx.restore();
+      c.fillStyle = '#3a2a1a';
+      c.fillRect(-3, 12, 8, 5);
+      c.restore();
 
       // Front leg
-      ctx.save();
-      ctx.translate(2, 10);
-      ctx.rotate((legSwing) * Math.PI / 180);
-      ctx.fillStyle = '#4a6a9a';
-      ctx.fillRect(-3, 0, 6, 14);
+      c.save();
+      c.translate(2, 10);
+      c.rotate((legSwing) * Math.PI / 180);
+      c.fillStyle = '#4a6a9a';
+      c.fillRect(-3, 0, 6, 14);
       // Boot
-      ctx.fillStyle = '#3a2a1a';
-      ctx.fillRect(-3, 12, 8, 5);
+      c.fillStyle = '#3a2a1a';
+      c.fillRect(-3, 12, 8, 5);
       // Knee tear
-      ctx.fillStyle = '#5a7aaa';
-      ctx.fillRect(-2, 6, 4, 3);
-      ctx.restore();
+      c.fillStyle = '#5a7aaa';
+      c.fillRect(-2, 6, 4, 3);
+      c.restore();
 
       // ---- TORSO ----
       // Jacket/shirt
-      ctx.fillStyle = '#5a6a5a'; // olive/military green
-      ctx.fillRect(-8, -10 - bobY, 16, 22);
+      c.fillStyle = '#5a6a5a'; // olive/military green
+      c.fillRect(-8, -10 - bobY, 16, 22);
 
       // Jacket details
-      ctx.strokeStyle = '#4a5a4a';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(0, -10 - bobY);
-      ctx.lineTo(0, 12 - bobY);
-      ctx.stroke();
+      c.strokeStyle = '#4a5a4a';
+      c.lineWidth = 1;
+      c.beginPath();
+      c.moveTo(0, -10 - bobY);
+      c.lineTo(0, 12 - bobY);
+      c.stroke();
 
       // Pocket
-      ctx.strokeStyle = '#4a5a4a';
-      ctx.strokeRect(2, 0 - bobY, 5, 4);
+      c.strokeStyle = '#4a5a4a';
+      c.strokeRect(2, 0 - bobY, 5, 4);
 
       // Belt
-      ctx.fillStyle = '#4a3a2a';
-      ctx.fillRect(-8, 8 - bobY, 16, 3);
-      ctx.fillStyle = '#888';
-      ctx.fillRect(-1, 8 - bobY, 3, 3); // buckle
+      c.fillStyle = '#4a3a2a';
+      c.fillRect(-8, 8 - bobY, 16, 3);
+      c.fillStyle = '#888';
+      c.fillRect(-1, 8 - bobY, 3, 3); // buckle
 
       // ---- BACKPACK ----
-      ctx.fillStyle = '#6a5040';
-      ctx.fillRect(-12, -8 - bobY, 5, 14);
-      ctx.strokeStyle = '#5a4030';
-      ctx.strokeRect(-12, -8 - bobY, 5, 14);
+      c.fillStyle = '#6a5040';
+      c.fillRect(-12, -8 - bobY, 5, 14);
+      c.strokeStyle = '#5a4030';
+      c.strokeRect(-12, -8 - bobY, 5, 14);
       // Strap
-      ctx.strokeStyle = '#5a4030';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(-7, -8 - bobY);
-      ctx.lineTo(-5, -4 - bobY);
-      ctx.stroke();
+      c.strokeStyle = '#5a4030';
+      c.lineWidth = 1.5;
+      c.beginPath();
+      c.moveTo(-7, -8 - bobY);
+      c.lineTo(-5, -4 - bobY);
+      c.stroke();
       // Bedroll on top
-      ctx.fillStyle = '#7a6a5a';
-      ctx.beginPath();
-      ctx.ellipse(-10, -9 - bobY, 4, 2.5, 0.3, 0, Math.PI * 2);
-      ctx.fill();
+      c.fillStyle = '#7a6a5a';
+      c.beginPath();
+      c.ellipse(-10, -9 - bobY, 4, 2.5, 0.3, 0, Math.PI * 2);
+      c.fill();
 
       // ---- ARMS ----
       // Back arm
-      ctx.save();
-      ctx.translate(-6, -4 - bobY);
-      ctx.rotate((-armSwing) * Math.PI / 180);
-      ctx.fillStyle = '#5a6a5a';
-      ctx.fillRect(-2, 0, 4, 10);
+      c.save();
+      c.translate(-6, -4 - bobY);
+      c.rotate((-armSwing) * Math.PI / 180);
+      c.fillStyle = '#5a6a5a';
+      c.fillRect(-2, 0, 4, 10);
       // Hand
-      ctx.fillStyle = '#d4a574';
-      ctx.beginPath();
-      ctx.arc(0, 11, 2.5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
+      c.fillStyle = '#d4a574';
+      c.beginPath();
+      c.arc(0, 11, 2.5, 0, Math.PI * 2);
+      c.fill();
+      c.restore();
 
       // Front arm (holding something?)
-      ctx.save();
-      ctx.translate(6, -4 - bobY);
-      ctx.rotate((armSwing) * Math.PI / 180);
-      ctx.fillStyle = '#5a6a5a';
-      ctx.fillRect(-2, 0, 4, 10);
+      c.save();
+      c.translate(6, -4 - bobY);
+      c.rotate((armSwing) * Math.PI / 180);
+      c.fillStyle = '#5a6a5a';
+      c.fillRect(-2, 0, 4, 10);
       // Hand
-      ctx.fillStyle = '#d4a574';
-      ctx.beginPath();
-      ctx.arc(0, 11, 2.5, 0, Math.PI * 2);
-      ctx.fill();
+      c.fillStyle = '#d4a574';
+      c.beginPath();
+      c.arc(0, 11, 2.5, 0, Math.PI * 2);
+      c.fill();
 
       // Flashlight in hand
-      ctx.fillStyle = '#555';
-      ctx.fillRect(-1, 11, 3, 7);
-      ctx.fillStyle = '#666';
-      ctx.fillRect(-2, 17, 5, 2);
-      ctx.restore();
+      c.fillStyle = '#555';
+      c.fillRect(-1, 11, 3, 7);
+      c.fillStyle = '#666';
+      c.fillRect(-2, 17, 5, 2);
+      c.restore();
 
       // ---- HEAD ----
       // Neck
-      ctx.fillStyle = '#d4a574';
-      ctx.fillRect(-2, -14 - bobY, 4, 4);
+      c.fillStyle = '#d4a574';
+      c.fillRect(-2, -14 - bobY, 4, 4);
 
       // Head shape
-      ctx.fillStyle = '#d4a574';
-      ctx.beginPath();
-      ctx.ellipse(0, -20 - bobY, 8, 9, 0, 0, Math.PI * 2);
-      ctx.fill();
+      c.fillStyle = '#d4a574';
+      c.beginPath();
+      c.ellipse(0, -20 - bobY, 8, 9, 0, 0, Math.PI * 2);
+      c.fill();
 
       // Hair (messy/unkempt)
-      ctx.fillStyle = '#3a2a1a';
-      ctx.beginPath();
-      ctx.ellipse(0, -26 - bobY, 8, 5, 0, Math.PI, 0);
-      ctx.fill();
+      c.fillStyle = '#3a2a1a';
+      c.beginPath();
+      c.ellipse(0, -26 - bobY, 8, 5, 0, Math.PI, 0);
+      c.fill();
       // Messy strands
-      ctx.beginPath();
-      ctx.moveTo(-7, -24 - bobY);
-      ctx.lineTo(-9, -27 - bobY);
-      ctx.lineTo(-5, -26 - bobY);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(5, -25 - bobY);
-      ctx.lineTo(8, -28 - bobY);
-      ctx.lineTo(6, -25 - bobY);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(-2, -28 - bobY);
-      ctx.lineTo(-1, -31 - bobY);
-      ctx.lineTo(1, -28 - bobY);
-      ctx.fill();
+      c.beginPath();
+      c.moveTo(-7, -24 - bobY);
+      c.lineTo(-9, -27 - bobY);
+      c.lineTo(-5, -26 - bobY);
+      c.fill();
+      c.beginPath();
+      c.moveTo(5, -25 - bobY);
+      c.lineTo(8, -28 - bobY);
+      c.lineTo(6, -25 - bobY);
+      c.fill();
+      c.beginPath();
+      c.moveTo(-2, -28 - bobY);
+      c.lineTo(-1, -31 - bobY);
+      c.lineTo(1, -28 - bobY);
+      c.fill();
 
       // Eyes (wide, scared)
       // Left eye
-      ctx.fillStyle = '#fff';
-      ctx.beginPath();
-      ctx.ellipse(-3, -20 - bobY, 3.5, 4, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#4a3020';
-      ctx.beginPath();
-      ctx.arc(-2, -20 - bobY, 2, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#000';
-      ctx.beginPath();
-      ctx.arc(-1.5, -20 - bobY, 1.2, 0, Math.PI * 2);
-      ctx.fill();
+      c.fillStyle = '#fff';
+      c.beginPath();
+      c.ellipse(-3, -20 - bobY, 3.5, 4, 0, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = '#4a3020';
+      c.beginPath();
+      c.arc(-2, -20 - bobY, 2, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = '#000';
+      c.beginPath();
+      c.arc(-1.5, -20 - bobY, 1.2, 0, Math.PI * 2);
+      c.fill();
       // Highlight
-      ctx.fillStyle = '#fff';
-      ctx.beginPath();
-      ctx.arc(-2.5, -21 - bobY, 0.6, 0, Math.PI * 2);
-      ctx.fill();
+      c.fillStyle = '#fff';
+      c.beginPath();
+      c.arc(-2.5, -21 - bobY, 0.6, 0, Math.PI * 2);
+      c.fill();
 
       // Right eye
-      ctx.fillStyle = '#fff';
-      ctx.beginPath();
-      ctx.ellipse(4, -20 - bobY, 3.5, 4, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#4a3020';
-      ctx.beginPath();
-      ctx.arc(5, -20 - bobY, 2, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#000';
-      ctx.beginPath();
-      ctx.arc(5.5, -20 - bobY, 1.2, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#fff';
-      ctx.beginPath();
-      ctx.arc(4.5, -21 - bobY, 0.6, 0, Math.PI * 2);
-      ctx.fill();
+      c.fillStyle = '#fff';
+      c.beginPath();
+      c.ellipse(4, -20 - bobY, 3.5, 4, 0, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = '#4a3020';
+      c.beginPath();
+      c.arc(5, -20 - bobY, 2, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = '#000';
+      c.beginPath();
+      c.arc(5.5, -20 - bobY, 1.2, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = '#fff';
+      c.beginPath();
+      c.arc(4.5, -21 - bobY, 0.6, 0, Math.PI * 2);
+      c.fill();
 
       // Worried eyebrows
-      ctx.strokeStyle = '#3a2a1a';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(-6, -24 - bobY);
-      ctx.lineTo(-1, -25 - bobY);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(2, -25 - bobY);
-      ctx.lineTo(7, -24 - bobY);
-      ctx.stroke();
+      c.strokeStyle = '#3a2a1a';
+      c.lineWidth = 1.5;
+      c.beginPath();
+      c.moveTo(-6, -24 - bobY);
+      c.lineTo(-1, -25 - bobY);
+      c.stroke();
+      c.beginPath();
+      c.moveTo(2, -25 - bobY);
+      c.lineTo(7, -24 - bobY);
+      c.stroke();
 
       // Open mouth (scared)
-      ctx.fillStyle = '#222';
-      ctx.beginPath();
-      ctx.ellipse(1, -15 - bobY, 3, 2.5, 0, 0, Math.PI * 2);
-      ctx.fill();
+      c.fillStyle = '#222';
+      c.beginPath();
+      c.ellipse(1, -15 - bobY, 3, 2.5, 0, 0, Math.PI * 2);
+      c.fill();
 
       // Dirt smudge on face
-      ctx.fillStyle = 'rgba(80, 60, 40, 0.3)';
-      ctx.beginPath();
-      ctx.ellipse(5, -17 - bobY, 3, 2, 0.3, 0, Math.PI * 2);
-      ctx.fill();
+      c.fillStyle = 'rgba(80, 60, 40, 0.3)';
+      c.beginPath();
+      c.ellipse(5, -17 - bobY, 3, 2, 0.3, 0, Math.PI * 2);
+      c.fill();
 
       // Bandage on forehead
-      ctx.fillStyle = '#ddd';
-      ctx.save();
-      ctx.translate(0, -24 - bobY);
-      ctx.rotate(-0.15);
-      ctx.fillRect(-6, -1, 10, 3);
+      c.fillStyle = '#ddd';
+      c.save();
+      c.translate(0, -24 - bobY);
+      c.rotate(-0.15);
+      c.fillRect(-6, -1, 10, 3);
       // Blood spot on bandage
-      ctx.fillStyle = '#aa3333';
-      ctx.beginPath();
-      ctx.arc(-1, 0.5, 1.5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
+      c.fillStyle = '#aa3333';
+      c.beginPath();
+      c.arc(-1, 0.5, 1.5, 0, Math.PI * 2);
+      c.fill();
+      c.restore();
 
       // Sweat drops (when falling)
-      if (zombie.vy > 1) {
-        ctx.fillStyle = 'rgba(150, 200, 255, 0.7)';
-        ctx.beginPath();
-        ctx.ellipse(-9, -18 - bobY, 1.5, 2.5, -0.3, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.ellipse(9, -22 - bobY, 1, 2, 0.3, 0, Math.PI * 2);
-        ctx.fill();
+      if (targetCtx === undefined && zombie.vy > 1) {
+        c.fillStyle = 'rgba(150, 200, 255, 0.7)';
+        c.beginPath();
+        c.ellipse(-9, -18 - bobY, 1.5, 2.5, -0.3, 0, Math.PI * 2);
+        c.fill();
+        c.beginPath();
+        c.ellipse(9, -22 - bobY, 1, 2, 0.3, 0, Math.PI * 2);
+        c.fill();
       }
 
-      ctx.restore();
+      c.restore();
+    }
+
+    // ---- RUNNER 2: Different outfit, ponytail, red jacket ----
+    function drawSurvivor2(targetCtx, tx, ty, useFrameCount, scale) {
+      const c = targetCtx || ctx;
+      const px = tx !== undefined ? tx : zombie.x;
+      const py = ty !== undefined ? ty : zombie.y;
+      const fc = useFrameCount !== undefined ? useFrameCount : frameCount;
+      const sc = scale || 1;
+
+      c.save();
+      c.translate(px, py);
+      if (sc !== 1) c.scale(sc, sc);
+
+      if (targetCtx === undefined) {
+        const targetRot = Math.min(Math.max(zombie.vy * 2, -15), 20);
+        zombie.rotation += (targetRot - zombie.rotation) * 0.1;
+        c.rotate(zombie.rotation * Math.PI / 180);
+        zombie.frame += 0.15;
+        zombie.flapTimer = Math.max(0, zombie.flapTimer - 1);
+      }
+
+      const runCycle = Math.sin(fc * 0.25);
+      const legSwing = runCycle * 12;
+      const armSwing = -runCycle * 10;
+      const bobY = Math.abs(Math.sin(fc * 0.25)) * 2;
+
+      // ---- LEGS ----
+      c.save();
+      c.translate(-2, 10);
+      c.rotate((-legSwing) * Math.PI / 180);
+      c.fillStyle = '#2a2a2a'; // black pants
+      c.fillRect(-3, 0, 6, 14);
+      c.fillStyle = '#6a3a2a'; // brown boots
+      c.fillRect(-3, 12, 8, 5);
+      c.restore();
+
+      c.save();
+      c.translate(2, 10);
+      c.rotate((legSwing) * Math.PI / 180);
+      c.fillStyle = '#333';
+      c.fillRect(-3, 0, 6, 14);
+      c.fillStyle = '#6a3a2a';
+      c.fillRect(-3, 12, 8, 5);
+      c.restore();
+
+      // ---- TORSO ----
+      c.fillStyle = '#8a2a2a'; // red leather jacket
+      c.fillRect(-8, -10 - bobY, 16, 22);
+      c.strokeStyle = '#6a1a1a';
+      c.lineWidth = 1;
+      c.beginPath();
+      c.moveTo(0, -10 - bobY);
+      c.lineTo(1, 12 - bobY);
+      c.stroke();
+      // Zipper
+      c.strokeStyle = '#ccc';
+      c.lineWidth = 0.8;
+      for (let z = -8; z < 10; z += 3) {
+        c.beginPath();
+        c.moveTo(-1, z - bobY);
+        c.lineTo(1, z + 1.5 - bobY);
+        c.stroke();
+      }
+      // Belt
+      c.fillStyle = '#222';
+      c.fillRect(-8, 8 - bobY, 16, 3);
+      c.fillStyle = '#aaa';
+      c.fillRect(-1, 8 - bobY, 3, 3);
+
+      // ---- SATCHEL (side bag) ----
+      c.fillStyle = '#8a7a5a';
+      c.fillRect(7, -2 - bobY, 5, 10);
+      c.strokeStyle = '#6a5a3a';
+      c.strokeRect(7, -2 - bobY, 5, 10);
+      c.fillStyle = '#6a5a3a';
+      c.fillRect(8, 0 - bobY, 3, 1.5); // clasp
+
+      // ---- ARMS ----
+      c.save();
+      c.translate(-6, -4 - bobY);
+      c.rotate((-armSwing) * Math.PI / 180);
+      c.fillStyle = '#8a2a2a';
+      c.fillRect(-2, 0, 4, 10);
+      c.fillStyle = '#c49a6c';
+      c.beginPath();
+      c.arc(0, 11, 2.5, 0, Math.PI * 2);
+      c.fill();
+      c.restore();
+
+      c.save();
+      c.translate(6, -4 - bobY);
+      c.rotate((armSwing) * Math.PI / 180);
+      c.fillStyle = '#8a2a2a';
+      c.fillRect(-2, 0, 4, 10);
+      c.fillStyle = '#c49a6c';
+      c.beginPath();
+      c.arc(0, 11, 2.5, 0, Math.PI * 2);
+      c.fill();
+      // Baseball bat
+      c.fillStyle = '#8a6a3a';
+      c.save();
+      c.rotate(0.3);
+      c.fillRect(-1.5, 11, 3, 12);
+      c.fillStyle = '#7a5a2a';
+      c.fillRect(-2.5, 21, 5, 4);
+      c.restore();
+      c.restore();
+
+      // ---- HEAD ----
+      c.fillStyle = '#c49a6c';
+      c.fillRect(-2, -14 - bobY, 4, 4);
+
+      c.fillStyle = '#c49a6c';
+      c.beginPath();
+      c.ellipse(0, -20 - bobY, 8, 9, 0, 0, Math.PI * 2);
+      c.fill();
+
+      // Hair (ponytail)
+      c.fillStyle = '#1a0a0a';
+      c.beginPath();
+      c.ellipse(0, -26 - bobY, 9, 5, 0, Math.PI, 0);
+      c.fill();
+      // Side hair
+      c.fillRect(-8, -24 - bobY, 3, 8);
+      c.fillRect(5, -24 - bobY, 3, 8);
+      // Ponytail (bouncing)
+      const ponytailBounce = Math.sin(fc * 0.2) * 4;
+      c.beginPath();
+      c.moveTo(-6, -24 - bobY);
+      c.quadraticCurveTo(-14, -18 - bobY + ponytailBounce, -12, -8 - bobY + ponytailBounce);
+      c.quadraticCurveTo(-10, -6 - bobY + ponytailBounce, -8, -10 - bobY);
+      c.lineTo(-8, -22 - bobY);
+      c.closePath();
+      c.fill();
+      // Hair band
+      c.fillStyle = '#cc3333';
+      c.beginPath();
+      c.arc(-7, -23 - bobY, 2, 0, Math.PI * 2);
+      c.fill();
+
+      // Eyes
+      c.fillStyle = '#fff';
+      c.beginPath();
+      c.ellipse(-3, -20 - bobY, 3.5, 3.5, 0, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = '#2a6a2a';
+      c.beginPath();
+      c.arc(-2, -20 - bobY, 2, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = '#000';
+      c.beginPath();
+      c.arc(-1.5, -20 - bobY, 1.2, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = '#fff';
+      c.beginPath();
+      c.arc(-2.5, -21 - bobY, 0.6, 0, Math.PI * 2);
+      c.fill();
+
+      c.fillStyle = '#fff';
+      c.beginPath();
+      c.ellipse(4, -20 - bobY, 3.5, 3.5, 0, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = '#2a6a2a';
+      c.beginPath();
+      c.arc(5, -20 - bobY, 2, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = '#000';
+      c.beginPath();
+      c.arc(5.5, -20 - bobY, 1.2, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = '#fff';
+      c.beginPath();
+      c.arc(4.5, -21 - bobY, 0.6, 0, Math.PI * 2);
+      c.fill();
+
+      // Determined eyebrows (angled down)
+      c.strokeStyle = '#1a0a0a';
+      c.lineWidth = 1.5;
+      c.beginPath();
+      c.moveTo(-6, -25 - bobY);
+      c.lineTo(-1, -24 - bobY);
+      c.stroke();
+      c.beginPath();
+      c.moveTo(2, -24 - bobY);
+      c.lineTo(7, -25 - bobY);
+      c.stroke();
+
+      // Clenched mouth
+      c.strokeStyle = '#6a4a3a';
+      c.lineWidth = 1.5;
+      c.beginPath();
+      c.moveTo(-2, -14.5 - bobY);
+      c.lineTo(3, -14.5 - bobY);
+      c.stroke();
+
+      // Scar on cheek
+      c.strokeStyle = '#aa6666';
+      c.lineWidth = 1;
+      c.beginPath();
+      c.moveTo(4, -18 - bobY);
+      c.lineTo(7, -15 - bobY);
+      c.stroke();
+
+      // Sweat
+      if (targetCtx === undefined && zombie.vy > 1) {
+        c.fillStyle = 'rgba(150, 200, 255, 0.7)';
+        c.beginPath();
+        c.ellipse(-9, -18 - bobY, 1.5, 2.5, -0.3, 0, Math.PI * 2);
+        c.fill();
+        c.beginPath();
+        c.ellipse(10, -22 - bobY, 1, 2, 0.3, 0, Math.PI * 2);
+        c.fill();
+      }
+
+      c.restore();
+    }
+
+    function drawCurrentSurvivor(targetCtx, tx, ty, useFrameCount, scale) {
+      if (selectedChar === 2) {
+        drawSurvivor2(targetCtx, tx, ty, useFrameCount, scale);
+      } else {
+        drawSurvivor(targetCtx, tx, ty, useFrameCount, scale);
+      }
     }
 
     function drawBrain(brain) {
@@ -974,6 +1360,7 @@
     }
 
     function startGame() {
+      const ds = diffSettings[selectedDifficulty];
       gameState = 'playing';
       score = 0;
       brainsCollected = 0;
@@ -984,14 +1371,21 @@
       zombie.y = H / 2;
       zombie.vy = 0;
       zombie.rotation = 0;
+      zombie.gravity = ds.gravity;
+      zombie.flapPower = ds.flapPower;
       difficulty = 1;
-      pipeGap = 160;
+      pipeGap = ds.gapStart;
 
       document.getElementById('menu-screen').classList.add('hidden');
       document.getElementById('gameover-screen').classList.add('hidden');
       document.getElementById('ui-overlay').classList.remove('active');
       document.getElementById('score-hud').classList.remove('hidden');
       document.getElementById('score-hud').textContent = '0';
+
+      const diffHud = document.getElementById('diff-hud');
+      diffHud.classList.remove('hidden');
+      diffHud.textContent = selectedDifficulty;
+      diffHud.style.color = ds.color;
     }
 
     function die() {
@@ -1000,8 +1394,10 @@
 
       if (score > bestScore) {
         bestScore = score;
-        localStorage.setItem('flappyDeadBest', bestScore.toString());
+        localStorage.setItem('deadRunBest', bestScore.toString());
       }
+
+      saveToLeaderboard(score, selectedDifficulty, selectedChar);
 
       setTimeout(() => {
         document.getElementById('ui-overlay').classList.add('active');
@@ -1009,7 +1405,9 @@
         document.getElementById('score-hud').classList.add('hidden');
         document.getElementById('finalScore').textContent = `Score: ${score}`;
         document.getElementById('bestScore').textContent = `Best: ${bestScore}`;
-        document.getElementById('brainCount').textContent = `Brains eaten: ${brainsCollected}`;
+        document.getElementById('brainCount').textContent = `Brains collected: ${brainsCollected}`;
+        document.getElementById('diff-hud').classList.add('hidden');
+        renderLeaderboard(score);
       }, 500);
     }
 
@@ -1018,9 +1416,10 @@
 
       frameCount++;
 
-      // Difficulty scaling (gentler ramp)
-      difficulty = 1 + score * 0.012;
-      pipeGap = Math.max(130, 165 - score * 1);
+      // Difficulty scaling based on selected mode
+      const ds = diffSettings[selectedDifficulty];
+      difficulty = 1 + score * ds.diffScale;
+      pipeGap = Math.max(ds.gapMin, ds.gapStart - score * ds.gapShrink);
 
       // Zombie physics
       zombie.vy += zombie.gravity;
@@ -1039,7 +1438,7 @@
       }
 
       // Ground scroll
-      groundX -= pipeSpeed * difficulty;
+      groundX -= ds.pipeSpeed * difficulty;
 
       // Pipe spawning
       pipeTimer++;
@@ -1049,7 +1448,7 @@
       }
 
       // Update pipes
-      const speed = pipeSpeed * difficulty;
+      const speed = ds.pipeSpeed * difficulty;
       pipes.forEach(pipe => {
         pipe.x -= speed;
 
@@ -1137,11 +1536,11 @@
 
       // Draw zombie
       if (gameState === 'playing' || gameState === 'dead') {
-        drawSurvivor();
+        drawCurrentSurvivor();
       } else {
         // Idle animation on menu
         zombie.y = H / 2 + Math.sin(frameCount * 0.03) * 15;
-        drawSurvivor();
+        drawCurrentSurvivor();
       }
     }
 
@@ -1172,6 +1571,40 @@
 
     document.getElementById('startBtn').addEventListener('click', startGame);
     document.getElementById('restartBtn').addEventListener('click', startGame);
+
+    // ---- CHARACTER SELECTION ----
+    document.querySelectorAll('.char-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        selectedChar = parseInt(opt.dataset.char);
+        document.querySelectorAll('.char-option').forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+      });
+    });
+
+    // ---- DIFFICULTY SELECTION ----
+    document.querySelectorAll('.diff-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        selectedDifficulty = btn.dataset.diff;
+        document.querySelectorAll('.diff-btn').forEach(b => {
+          b.className = 'diff-btn';
+        });
+        btn.classList.add('selected-' + selectedDifficulty);
+      });
+    });
+
+    // ---- DRAW CHARACTER PREVIEWS ----
+    function drawCharPreviews() {
+      const c1 = document.getElementById('charPreview1');
+      const ctx1 = c1.getContext('2d');
+      ctx1.clearRect(0, 0, c1.width, c1.height);
+      drawSurvivor(ctx1, 25, 20, 0, 0.9);
+
+      const c2 = document.getElementById('charPreview2');
+      const ctx2 = c2.getContext('2d');
+      ctx2.clearRect(0, 0, c2.width, c2.height);
+      drawSurvivor2(ctx2, 25, 20, 0, 0.9);
+    }
+    drawCharPreviews();
 
     // Start loop
     gameLoop();
