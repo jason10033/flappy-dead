@@ -1,0 +1,8 @@
+{
+  "name": "flappy-dead",
+  "version": "1.0.0",
+  "description": "Flappy Dead - A zombie Flappy Bird clone",
+  "scripts": {
+    "dev": "npx serve -l 3000 ."
+  }
+}
